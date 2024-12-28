@@ -23,7 +23,7 @@ public:
             {
                 throw std::runtime_error("denominator can't be zero!");
             }
-            catch(const std::exception& e)
+            catch(const std::runtime_error& e)
             {
                 std::cerr << e.what() << '\n';
                 throw;
