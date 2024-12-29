@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <complex>
+#include <numbers>
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
@@ -20,7 +21,6 @@ class Int
 private:
     static constexpr int p = 2; // 因FFT精度问题在算2^10^7时最多压2位
     static constexpr T ppow = 100;
-    static constexpr double pi = 3.141592653589793;
 
     bool sgn;
     std::vector<T> a;
@@ -29,18 +29,32 @@ private:
     constexpr T back() const noexcept { return a.back(); }
     constexpr T &operator[](std::size_t i) noexcept { return a[i]; }
     constexpr T operator[](std::size_t i) const noexcept { return a[i]; }
-    constexpr bool is_zero() const noexcept { return a.size() == 1 && a[0] == 0; }
-    void f()
+    constexpr bool is_zero() const noexcept { return a.size() == 1 && !a[0]; }
+    void handle_carrying()
     {
-        std::size_t i;
-        for (i = 0; i + 1 < a.size(); ++i)
-            if (a[i] < 0)
-                --a[i + 1], a[i] += ppow;
-            else
-                a[i + 1] += a[i] / ppow, a[i] %= ppow;
+        for (std::size_t i = 0; i + 1 < a.size(); ++i)
+        {
+            a[i + 1] += a[i] / ppow;
+            a[i] %= ppow;
+        }
+        if (!back())
+            a.pop_back();
+    }
+    void handle_leading_zeros()
+    {
+        std::size_t i = a.size() - 1;
         while (!a[i] && i)
             --i;
         a.resize(i + 1);
+    }
+    void handle_borrowing()
+    {
+        for (std::size_t i = 0; i + 1 < a.size(); ++i)
+            if (a[i] < 0)
+            {
+                --a[i + 1];
+                a[i] += ppow;
+            }
     }
     void FFT(std::vector<std::complex<double>> &a, std::size_t n, int op) const
     {
@@ -53,7 +67,7 @@ private:
         }
         for (std::size_t i = 1; i < n; i <<= 1)
         {
-            std::complex<double> w(std::cos(pi / i), op * std::sin(pi / i));
+            std::complex<double> w(std::cos(std::numbers::pi / i), op * std::sin(std::numbers::pi / i));
             for (std::size_t j = 0; j < n; j += i << 1)
             {
                 std::complex<double> wk = 1;
@@ -69,14 +83,14 @@ private:
             for (std::size_t i = 0; i < n; ++i)
                 a[i] /= n;
     }
-    void MultipliedByTwo()
+    void multiplied_by_two()
     {
         for (std::size_t i = 0; i < a.size(); ++i)
             a[i] <<= 1;
         a.emplace_back(0);
-        f();
+        handle_carrying();
     }
-    void DividedByTwo()
+    void divided_by_two()
     {
         T res = 0;
         for (std::size_t i = a.size(); i; --i)
@@ -85,7 +99,8 @@ private:
             a[i - 1] = res >> 1;
             res &= 1;
         }
-        f();
+        if (!a.back() && a.size() != 1)
+            a.pop_back();
     }
 
 public:
@@ -146,7 +161,7 @@ public:
         a.emplace_back(0);
         for (std::size_t i = 0; i < t; ++i)
             a[i] += rhs[i];
-        f();
+        handle_carrying();
         return *this;
     }
     Int &operator-=(const Int &rhs)
@@ -166,7 +181,8 @@ public:
         else
             for (std::size_t i = 0; i < rhs.a.size(); ++i)
                 a[i] -= rhs[i];
-        f();
+        handle_borrowing();
+        handle_leading_zeros();
         return *this;
     }
     Int &operator*=(const Int &rhs)
@@ -189,7 +205,7 @@ public:
         a.resize(a.size() + rhs.a.size());
         for (std::size_t i = 0; i < a.size(); ++i)
             a[i] = int(c[i].imag() / 2 + 0.5);
-        f();
+        handle_carrying();
         return *this;
     }
     Int &operator/=(const Int &rhs)
@@ -209,8 +225,8 @@ public:
         this->sgn = rhs_t.sgn = true;
         while (rhs_t <= *this)
         {
-            rhs_t.MultipliedByTwo();
-            t.MultipliedByTwo();
+            rhs_t.multiplied_by_two();
+            t.multiplied_by_two();
         }
         Int res;
         do
@@ -220,8 +236,8 @@ public:
                 res += t;
                 *this -= rhs_t;
             }
-            rhs_t.DividedByTwo();
-            t.DividedByTwo();
+            rhs_t.divided_by_two();
+            t.divided_by_two();
         } while (t);
         res.sgn = sgn;
         return *this = res;
@@ -243,8 +259,8 @@ public:
         this->sgn = rhs_t.sgn = true;
         while (rhs_t <= *this)
         {
-            rhs_t.MultipliedByTwo();
-            t.MultipliedByTwo();
+            rhs_t.multiplied_by_two();
+            t.multiplied_by_two();
         }
         Int res;
         do
@@ -254,8 +270,8 @@ public:
                 res += t;
                 *this -= rhs_t;
             }
-            rhs_t.DividedByTwo();
-            t.DividedByTwo();
+            rhs_t.divided_by_two();
+            t.divided_by_two();
         } while (t);
         this->sgn = sgn;
         return *this;
@@ -313,7 +329,7 @@ public:
     friend Int pow(Int a, Int b)
     {
         Int res = 1;
-        for (; b; b.DividedByTwo())
+        for (; b; b.divided_by_two())
         {
             if (b[0] & 1) // when base is even
                 res *= a;
@@ -343,7 +359,7 @@ public:
             rhs[i] = std::stoull(s.substr(j, p));
         std::size_t t = (s.size() - !rhs.sgn) % p;
         rhs.back() = std::stoull(s.substr(!rhs.sgn, t ? t : p));
-        rhs.f();
+        rhs.handle_leading_zeros();
         if (rhs.is_zero())
             rhs.sgn = true;
         return is;
