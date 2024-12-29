@@ -12,7 +12,8 @@ private:
     void f()
     {
         Int t = gcd(abs(numerator), denominator);
-        numerator /= t, denominator /= t;
+        numerator /= t;
+        denominator /= t;
     }
 
 public:
@@ -36,25 +37,16 @@ public:
         f();
     }
     explicit operator bool() const noexcept { return numerator; }
-    Fraction operator-() const { return Fraction(-numerator, denominator); }
-    Fraction reciprocal() const
+    Fraction operator-() const
     {
-        if (numerator.is_zero())
-            try
-            {
-                throw std::runtime_error("zero has no reciprocal!");
-            }
-            catch(const std::runtime_error& e)
-            {
-                std::cerr << e.what() << '\n';
-                throw;
-            }
-        return Fraction(denominator, numerator);    
+        Fraction res = *this;
+        res.numerator = -res.numerator;
+        return res;
     }
+    Fraction reciprocal() const { return Fraction(denominator, numerator); }
     Fraction &operator+=(const Fraction &rhs)
     {
-        numerator *= rhs.denominator;
-        numerator += denominator * rhs.numerator;
+        numerator = numerator * rhs.denominator + denominator * rhs.numerator;
         denominator *= rhs.denominator;
         f();
         return *this;
