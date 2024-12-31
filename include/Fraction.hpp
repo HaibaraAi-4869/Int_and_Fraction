@@ -29,9 +29,9 @@ public:
                 std::cerr << e.what() << '\n';
                 throw;
             }
-        if (den.sgn == false)
+        if (!den.sgn)
         {
-            denominator.sgn ^= 1;
+            denominator.sgn = true;
             numerator = -numerator;
         }
         f();
@@ -82,9 +82,23 @@ public:
     }
     friend std::istream &operator>>(std::istream &is, Fraction &rhs)
     {
-        Int num, den;
-        is >> num >> den;
-        rhs = Fraction(num, den);
+        is >> rhs.numerator >> rhs.denominator;
+        if (rhs.denominator.is_zero())
+            try
+            {
+                throw std::runtime_error("denominator can't be zero!");
+            }
+            catch(const std::runtime_error& e)
+            {
+                std::cerr << e.what() << '\n';
+                throw;
+            }
+        if (!rhs.denominator.sgn)
+        {
+            rhs.denominator.sgn = true;
+            rhs.numerator = -rhs.numerator;
+        }
+        rhs.f();
         return is;
     }
     friend std::ostream &operator<<(std::ostream &os, const Fraction &rhs)
