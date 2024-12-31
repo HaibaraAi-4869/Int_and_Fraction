@@ -26,9 +26,9 @@ private:
     std::vector<T> a;
 
     constexpr T &back() noexcept { return a.back(); }
-    constexpr T back() const noexcept { return a.back(); }
+    constexpr const T &back() const noexcept { return a.back(); }
     constexpr T &operator[](std::size_t i) noexcept { return a[i]; }
-    constexpr T operator[](std::size_t i) const noexcept { return a[i]; }
+    constexpr const T &operator[](std::size_t i) const noexcept { return a[i]; }
     constexpr bool is_zero() const noexcept { return a.size() == 1 && !a[0]; }
     void handle_carrying()
     {
