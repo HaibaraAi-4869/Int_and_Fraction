@@ -242,6 +242,8 @@ public:
         bool sgn = !(this->sgn ^ rhs.sgn);
         Int rhs_t = rhs, t = 1;
         this->sgn = rhs_t.sgn = true;
+        if (*this < rhs_t)
+            return *this = 0;
         while (rhs_t <= *this)
         {
             rhs_t.multiplied_by_two();
