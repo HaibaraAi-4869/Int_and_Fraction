@@ -19,7 +19,7 @@ class Int
     friend class Fraction<T>;
 
 private:
-    static constexpr int p = 2; // 因FFT精度问题在算2^10^7时最多压2位
+    static constexpr int p = 2;
     static constexpr T ppow = 100;
 
     bool sgn;
@@ -73,9 +73,9 @@ private:
                 std::complex<double> wk = 1;
                 for (std::size_t k = 0; k < i; ++k, wk *= w)
                 {
-                    std::complex<double> t = wk * a[i + j + k];
-                    a[i + j + k] = a[j + k] - t;
-                    a[j + k] += t;
+                    std::complex<double> t = wk * a[i | j | k];
+                    a[i | j | k] = a[j | k] - t;
+                    a[j | k] += t;
                 }
             }
         }
@@ -190,21 +190,40 @@ public:
         if (is_zero() || rhs.is_zero())
             return *this = 0;
         sgn = !(sgn ^ rhs.sgn);
-        std::size_t n = 1, t = std::max(a.size(), rhs.a.size()) << 1;
-        while (n < t)
-            n <<= 1;
-        std::vector<std::complex<double>> c(n);
-        for (std::size_t i = 0; i < a.size(); ++i)
-            c[i].real(a[i]);
-        for (std::size_t i = 0; i < rhs.a.size(); ++i)
-            c[i].imag(rhs[i]);
-        FFT(c, n, 1);
-        for (std::size_t i = 0; i < n; ++i)
-            c[i] *= c[i];
-        FFT(c, n, -1);
-        a.resize(a.size() + rhs.a.size());
-        for (std::size_t i = 0; i < a.size(); ++i)
-            a[i] = int(c[i].imag() / 2 + 0.5);
+        if (a.size() < 140 || rhs.a.size() < 140)
+        {
+            a.resize(a.size() + rhs.a.size());
+            for (std::size_t i = a.size() - 1; i >= rhs.a.size(); --i)
+            {
+                a[i] *= rhs[0];
+                for (std::size_t j = 1; j < rhs.a.size(); ++j)
+                    a[i] += rhs[j] * a[i - j];
+            }
+            for (std::size_t i = rhs.a.size(); i; --i)
+            {
+                a[i - 1] *= rhs[0];
+                for (std::size_t j = 1; j < i; ++j)
+                    a[i - 1] += rhs[j] * a[i - 1 - j];
+            }
+        }
+        else
+        {
+            std::size_t n = 1, t = std::max(a.size(), rhs.a.size()) << 1;
+            while (n < t)
+                n <<= 1;
+            std::vector<std::complex<double>> c(n);
+            for (std::size_t i = 0; i < a.size(); ++i)
+                c[i].real(a[i]);
+            for (std::size_t i = 0; i < rhs.a.size(); ++i)
+                c[i].imag(rhs[i]);
+            FFT(c, n, 1);
+            for (std::size_t i = 0; i < n; ++i)
+                c[i] *= c[i];
+            FFT(c, n, -1);
+            a.resize(a.size() + rhs.a.size());
+            for (std::size_t i = 0; i < a.size(); ++i)
+                a[i] = static_cast<T>(c[i].imag() / 2 + 0.5);
+        }
         handle_carrying();
         return *this;
     }
@@ -331,7 +350,7 @@ public:
         Int res = 1;
         for (; b; b.divided_by_two())
         {
-            if (b[0] & 1) // when base is even
+            if (b[0] & 1)
                 res *= a;
             a *= a;
         }
