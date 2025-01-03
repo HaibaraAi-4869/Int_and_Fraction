@@ -82,28 +82,16 @@ public:
     }
     friend std::istream &operator>>(std::istream &is, Fraction &rhs)
     {
-        is >> rhs.numerator >> rhs.denominator;
-        if (rhs.denominator.is_zero())
-            try
-            {
-                throw std::runtime_error("denominator can't be zero!");
-            }
-            catch(const std::runtime_error& e)
-            {
-                std::cerr << e.what() << '\n';
-                throw;
-            }
-        if (!rhs.denominator.sgn)
-        {
-            rhs.denominator.sgn = true;
-            rhs.numerator = -rhs.numerator;
-        }
-        rhs.f();
+        Int num, den;
+        is >> num >> den;
+        rhs = Fraction(num, den);
         return is;
     }
     friend std::ostream &operator<<(std::ostream &os, const Fraction &rhs)
     {
-        os << rhs.numerator << '/' << rhs.denominator;
+        os << rhs.numerator;
+        if (rhs.denominator != 1)
+            os << '/' << rhs.denominator;
         return os;
     }
 };
