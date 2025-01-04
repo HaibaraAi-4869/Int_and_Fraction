@@ -13,6 +13,8 @@ class Fraction;
 class Int
 {
     friend class Fraction;
+    friend Fraction abs(const Fraction &);
+    friend Fraction pow(Fraction, Int);
 
 private:
     static constexpr int p = 2, ppow = 100;
@@ -83,6 +85,8 @@ private:
         a.emplace_back(0);
         handle_carrying();
     }
+
+public:
     void divided_by_two()
     {
         int res = 0;
@@ -185,19 +189,11 @@ public:
         sgn = !(sgn ^ rhs.sgn);
         if (a.size() < 140 || rhs.a.size() < 140)
         {
-            a.resize(a.size() + rhs.a.size());
-            for (std::size_t i = a.size() - 1; i >= rhs.a.size(); --i)
-            {
-                a[i] *= rhs[0];
-                for (std::size_t j = 1; j < rhs.a.size(); ++j)
-                    a[i] += rhs[j] * a[i - j];
-            }
-            for (std::size_t i = rhs.a.size(); i; --i)
-            {
-                a[i - 1] *= rhs[0];
-                for (std::size_t j = 1; j < i; ++j)
-                    a[i - 1] += rhs[j] * a[i - 1 - j];
-            }
+            std::vector<int> c(a.size() + rhs.a.size());
+            for (std::size_t i = 0; i < a.size(); ++i)
+                for (std::size_t j = 0; j < rhs.a.size(); ++j)
+                    c[i + j] += a[i] * rhs[j];
+            a = std::move(c);
         }
         else
         {
