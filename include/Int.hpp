@@ -1,34 +1,27 @@
 #ifndef INT_HPP
 #define INT_HPP
-
 #include <cmath>
 #include <string>
 #include <vector>
 #include <complex>
 #include <numbers>
+#include <utility>
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
-
-template <class>
 class Fraction;
-
-template <class T = int>
 class Int
 {
-    friend class Fraction<T>;
+    friend class Fraction;
 
 private:
-    static constexpr int p = 2;
-    static constexpr T ppow = 100;
-
+    static constexpr int p = 2, ppow = 100;
     bool sgn;
-    std::vector<T> a;
-
-    constexpr T &back() noexcept { return a.back(); }
-    constexpr const T &back() const noexcept { return a.back(); }
-    constexpr T &operator[](std::size_t i) noexcept { return a[i]; }
-    constexpr const T &operator[](std::size_t i) const noexcept { return a[i]; }
+    std::vector<int> a;
+    constexpr int &back() noexcept { return a.back(); }
+    constexpr const int &back() const noexcept { return a.back(); }
+    constexpr int &operator[](std::size_t i) noexcept { return a[i]; }
+    constexpr const int &operator[](std::size_t i) const noexcept { return a[i]; }
     constexpr bool is_zero() const noexcept { return a.size() == 1 && !a[0]; }
     void handle_carrying()
     {
@@ -92,7 +85,7 @@ private:
     }
     void divided_by_two()
     {
-        T res = 0;
+        int res = 0;
         for (std::size_t i = a.size(); i; --i)
         {
             res = res * ppow + a[i - 1];
@@ -222,7 +215,7 @@ public:
             FFT(c, n, -1);
             a.resize(a.size() + rhs.a.size());
             for (std::size_t i = 0; i < a.size(); ++i)
-                a[i] = static_cast<T>(c[i].imag() / 2 + 0.5);
+                a[i] = static_cast<int>(c[i].imag() / 2 + 0.5);
         }
         handle_carrying();
         return *this;
@@ -374,15 +367,15 @@ public:
     {
         std::string s;
         is >> s;
-        rhs.sgn = s[0] != '-';
-        rhs.a.resize((s.size() - !rhs.sgn + p - 1) / p);
-        for (std::size_t i = 0, j = s.size() - p; i + 1 < rhs.a.size(); ++i, j -= p)
-            rhs[i] = std::stoull(s.substr(j, p));
-        std::size_t t = (s.size() - !rhs.sgn) % p;
-        rhs.back() = std::stoull(s.substr(!rhs.sgn, t ? t : p));
+        bool sgn = s[0] != '-';
+        std::vector<int> a((s.size() - !sgn + p - 1) / p);
+        for (std::size_t i = 0, j = s.size() - p; i + 1 < a.size(); ++i, j -= p)
+            a[i] = std::stoi(s.substr(j, p));
+        std::size_t t = (s.size() - !sgn) % p;
+        a.back() = std::stoi(s.substr(!sgn, t ? t : p));
+        rhs.a = std::move(a);
         rhs.handle_leading_zeros();
-        if (rhs.is_zero())
-            rhs.sgn = true;
+        rhs.sgn = rhs.is_zero() ? true : sgn;
         return is;
     }
     friend std::ostream &operator<<(std::ostream &os, const Int &rhs)
@@ -397,5 +390,4 @@ public:
         return os;
     }
 };
-
 #endif

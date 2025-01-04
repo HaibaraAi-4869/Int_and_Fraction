@@ -1,14 +1,10 @@
 #ifndef FRACTION_HPP
 #define FRACTION_HPP
-
 #include <Int.hpp>
-
-template <class T = int>
 class Fraction
 {
 private:
-    Int<T> numerator, denominator;
-
+    Int numerator, denominator;
     void f()
     {
         Int t = gcd(abs(numerator), denominator);
@@ -17,26 +13,34 @@ private:
     }
 
 public:
-    Fraction(const Int<T> &num = 0, const Int<T> &den = 1) : numerator(num), denominator(den)
+    Fraction(const Int &num = 0, const Int &den = 1) : numerator(0), denominator(1)
     {
         if (den.is_zero())
             try
             {
                 throw std::runtime_error("denominator can't be zero!");
             }
-            catch(const std::runtime_error& e)
+            catch (const std::runtime_error &e)
             {
                 std::cerr << e.what() << '\n';
                 throw;
             }
+        numerator = num;
+        denominator = den;
         if (!den.sgn)
         {
-            denominator.sgn = true;
             numerator = -numerator;
+            denominator.sgn = true;
         }
         f();
     }
-    explicit operator bool() const noexcept { return numerator; }
+    explicit operator bool() const noexcept { return bool(numerator); }
+    friend constexpr bool operator==(const Fraction &lhs, const Fraction &rhs) { return lhs.numerator == rhs.numerator && lhs.denominator == rhs.denominator; }
+    friend constexpr bool operator!=(const Fraction &lhs, const Fraction &rhs) { return !(lhs == rhs); }
+    friend bool operator<(const Fraction &lhs, const Fraction &rhs) { return lhs.numerator * rhs.denominator < lhs.denominator * rhs.numerator; }
+    friend bool operator>(const Fraction &lhs, const Fraction &rhs) { return rhs < lhs; }
+    friend bool operator>=(const Fraction &lhs, const Fraction &rhs) { return !(lhs < rhs); }
+    friend bool operator<=(const Fraction &lhs, const Fraction &rhs) { return !(rhs < lhs); }
     Fraction operator-() const
     {
         Fraction res = *this;
@@ -95,5 +99,4 @@ public:
         return os;
     }
 };
-
 #endif
