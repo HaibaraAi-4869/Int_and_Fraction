@@ -5,7 +5,7 @@ class Fraction
 {
 private:
     Int numerator, denominator;
-    void f()
+    void reduce()
     {
         Int t = gcd(abs(numerator), denominator);
         numerator /= t;
@@ -32,7 +32,7 @@ public:
             numerator = -numerator;
             denominator.sgn = true;
         }
-        f();
+        reduce();
     }
     Fraction(long long num = 0, long long den = 1) : Fraction(Int(num), Int(den)) {}
     explicit operator bool() const noexcept { return bool(numerator); }
@@ -53,7 +53,7 @@ public:
     {
         numerator = numerator * rhs.denominator + denominator * rhs.numerator;
         denominator *= rhs.denominator;
-        f();
+        reduce();
         return *this;
     }
     Fraction &operator-=(const Fraction &rhs) { return *this += -rhs; }
@@ -61,7 +61,7 @@ public:
     {
         numerator *= rhs.numerator;
         denominator *= rhs.denominator;
-        f();
+        reduce();
         return *this;
     }
     Fraction &operator/=(const Fraction &rhs) { return *this *= rhs.reciprocal(); }

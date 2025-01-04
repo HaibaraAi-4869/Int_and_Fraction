@@ -85,8 +85,6 @@ private:
         a.emplace_back(0);
         handle_carrying();
     }
-
-public:
     void divided_by_two()
     {
         int res = 0;
