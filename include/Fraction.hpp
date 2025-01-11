@@ -13,7 +13,7 @@ private:
     }
 
 public:
-    Fraction(const Int &num, const Int &den) : numerator(0), denominator(1)
+    Fraction(const Int &num = 0, const Int &den = 1) : numerator(0), denominator(1)
     {
         if (!den)
             try
@@ -34,7 +34,7 @@ public:
         }
         reduce();
     }
-    Fraction(long long num = 0, long long den = 1) : Fraction(Int(num), Int(den)) {}
+    Fraction(long long num, long long den = 1) : Fraction(Int(num), Int(den)) {}
     explicit operator bool() const noexcept { return bool(numerator); }
     friend bool operator==(const Fraction &lhs, const Fraction &rhs) { return lhs.numerator == rhs.numerator && lhs.denominator == rhs.denominator; }
     friend bool operator!=(const Fraction &lhs, const Fraction &rhs) { return !(lhs == rhs); }
