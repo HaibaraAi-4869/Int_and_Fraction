@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <complex>
-#include <numbers>
 #include <utility>
 #include <iostream>
 #include <algorithm>
@@ -18,14 +17,14 @@ class Int
 
 private:
     static constexpr int p = 2, ppow = 100;
+    static constexpr double pi = 3.141592653589793;
     bool sgn;
     std::vector<int> a;
-    constexpr int &back() noexcept { return a.back(); }
-    constexpr const int &back() const noexcept { return a.back(); }
-    constexpr int &operator[](std::size_t i) noexcept { return a[i]; }
-    constexpr const int &operator[](std::size_t i) const noexcept { return a[i]; }
-    constexpr bool is_zero() const noexcept { return a.size() == 1 && !a[0]; }
-    void handle_carrying()
+    int &back() noexcept { return a.back(); }
+    int back() const noexcept { return a.back(); }
+    int &operator[](std::size_t i) noexcept { return a[i]; }
+    int operator[](std::size_t i) const noexcept { return a[i]; }
+    void handle_carrying() noexcept
     {
         for (std::size_t i = 0; i + 1 < a.size(); ++i)
         {
@@ -35,14 +34,14 @@ private:
         if (!back())
             a.pop_back();
     }
-    void handle_leading_zeros()
+    void handle_leading_zeros() noexcept
     {
         std::size_t i = a.size() - 1;
         while (!a[i] && i)
             --i;
         a.resize(i + 1);
     }
-    void handle_borrowing()
+    void handle_borrowing() noexcept
     {
         for (std::size_t i = 0; i + 1 < a.size(); ++i)
             if (a[i] < 0)
@@ -62,7 +61,7 @@ private:
         }
         for (std::size_t i = 1; i < n; i <<= 1)
         {
-            std::complex<double> w(std::cos(std::numbers::pi / i), op * std::sin(std::numbers::pi / i));
+            std::complex<double> w(std::cos(pi / i), op * std::sin(pi / i));
             for (std::size_t j = 0; j < n; j += i << 1)
             {
                 std::complex<double> wk = 1;
@@ -85,7 +84,7 @@ private:
         a.emplace_back(0);
         handle_carrying();
     }
-    void divided_by_two()
+    void divided_by_two() noexcept
     {
         int res = 0;
         for (std::size_t i = a.size(); i; --i)
@@ -110,10 +109,22 @@ public:
             a.emplace_back(x % ppow);
         while (x /= ppow);
     }
-    explicit operator bool() const noexcept { return !is_zero(); }
-    std::size_t size() const { return p * (a.size() - 1) + std::to_string(back()).size(); }
-    friend constexpr bool operator==(const Int &lhs, const Int &rhs) { return lhs.sgn == rhs.sgn && lhs.a == rhs.a; }
-    friend constexpr bool operator!=(const Int &lhs, const Int &rhs) { return !(lhs == rhs); }
+    Int(const std::string &s) : Int()
+    {
+        bool sgn = s[0] != '-';
+        std::vector<int> b((s.size() - !sgn + p - 1) / p);
+        for (std::size_t i = 0, j = s.size() - p; i + 1 < b.size(); ++i, j -= p)
+            b[i] = std::stoi(s.substr(j, p));
+        std::size_t t = (s.size() - !sgn) % p;
+        b.back() = std::stoi(s.substr(!sgn, t ? t : p));
+        a = std::move(b);
+        handle_leading_zeros();
+        this->sgn = *this ? sgn : true;
+    }
+    explicit operator bool() const noexcept { return a[0] || a.size() != 1; }
+    std::size_t size() const noexcept { return p * (a.size() - 1) + std::to_string(back()).size(); }
+    friend bool operator==(const Int &lhs, const Int &rhs) { return lhs.sgn == rhs.sgn && lhs.a == rhs.a; }
+    friend bool operator!=(const Int &lhs, const Int &rhs) { return !(lhs == rhs); }
     friend bool operator<(const Int &lhs, const Int &rhs)
     {
         if (lhs.sgn != rhs.sgn)
@@ -141,7 +152,7 @@ public:
     }
     Int &operator+=(const Int &rhs)
     {
-        if (rhs.is_zero())
+        if (!rhs)
             return *this;
         if (sgn != rhs.sgn)
             return *this -= -rhs;
@@ -161,7 +172,7 @@ public:
     }
     Int &operator-=(const Int &rhs)
     {
-        if (rhs.is_zero())
+        if (!rhs)
             return *this;
         if (sgn != rhs.sgn)
             return *this += -rhs;
@@ -182,7 +193,7 @@ public:
     }
     Int &operator*=(const Int &rhs)
     {
-        if (is_zero() || rhs.is_zero())
+        if (!*this || !rhs)
             return *this = 0;
         sgn = !(sgn ^ rhs.sgn);
         if (a.size() < 140 || rhs.a.size() < 140)
@@ -216,7 +227,7 @@ public:
     }
     Int &operator/=(const Int &rhs)
     {
-        if (rhs.is_zero())
+        if (!rhs)
             try
             {
                 throw std::runtime_error("divisor can't be zero!");
@@ -252,7 +263,7 @@ public:
     }
     Int &operator%=(const Int &rhs)
     {
-        if (rhs.is_zero())
+        if (!rhs)
             try
             {
                 throw std::runtime_error("divisor can't be zero!");
@@ -361,15 +372,7 @@ public:
     {
         std::string s;
         is >> s;
-        bool sgn = s[0] != '-';
-        std::vector<int> a((s.size() - !sgn + p - 1) / p);
-        for (std::size_t i = 0, j = s.size() - p; i + 1 < a.size(); ++i, j -= p)
-            a[i] = std::stoi(s.substr(j, p));
-        std::size_t t = (s.size() - !sgn) % p;
-        a.back() = std::stoi(s.substr(!sgn, t ? t : p));
-        rhs.a = std::move(a);
-        rhs.handle_leading_zeros();
-        rhs.sgn = rhs.is_zero() ? true : sgn;
+        rhs = s;
         return is;
     }
     friend std::ostream &operator<<(std::ostream &os, const Int &rhs)
